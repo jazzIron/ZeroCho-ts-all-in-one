@@ -1,5 +1,8 @@
 # ts-all-in-one
 
+[인프런 강의] 제로초 study git repo
+https://www.inflearn.com/course/%ED%83%80%EC%9E%85%EC%8A%A4%ED%81%AC%EB%A6%BD%ED%8A%B8-%EC%98%AC%EC%9D%B8%EC%9B%90-1
+
 - [typescript 공식문서](https://www.typescriptlang.org/)
 - [typescript 플레이그라운드](https://www.typescriptlang.org/play)
 - [typescript 핸드북 필독](https://www.typescriptlang.org/docs/handbook/intro.html)
