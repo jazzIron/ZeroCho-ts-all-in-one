@@ -42,6 +42,12 @@ const add: (x: number, y: number) => number = (x, y) => x + y;
 const obj: { lat: number; lon: number } = { lat: 37.5, lon: 127.5 };
 ```
 
+- 특수한 타입 {} (null과 undefined가 아닌 모든 타입)
+
+```typescript
+const z: {} = 5;
+```
+
 - ts가 추론해주는 타입이 있는데 이런 건 그냥 그대로 사용하면 됨. ts가 추론하지 못하는 경우에만 직접 타이핑할 것.
 
 ```typescript
@@ -86,7 +92,7 @@ x = "hello";
 
 ```typescript
 try {
-  const array = [];
+  const array = []; // noImplicitAny가 false일 때
   array[0];
 } catch (error) {
   error;
@@ -169,7 +175,7 @@ walk(EDirection.Left);
 run(ODirection.Right);
 ```
 
-- 객제 타이핑: type과 interface 구분하기
+- 객체 타이핑: type과 interface 구분하기
 
 ```typescript
 type A = { a: string };
@@ -375,7 +381,7 @@ const constructor: abstract new (...args: any) => any = ...
 - optional
 
 ```typescript
-function abc(a: number, b?: number, c: ?number) {}
+function abc(a: number, b?: number, c: number?) {}
 abc(1);
 abc(1, 2);
 abc(1, 2, 3);
@@ -395,6 +401,16 @@ add(1, 2);
 add<string>("1", "2");
 add("1", "2");
 add(1, "2");
+```
+
+- 제네릭 선언 위치 기억하기
+
+```typescript
+function a<T>() {}
+class B<T>() {}
+interface C<T> {}
+type D<T> = {};
+const e = <T>() => {};
 ```
 
 - 제네릭 기본값, extends
@@ -465,6 +481,14 @@ try {
   await axios.get();
 } catch (err) {
   console.error(err.response?.data);
+}
+```
+
+- this 타이핑
+
+```typescript
+function (this: Window, a: number, b: number) {
+  console.log(this);
 }
 ```
 
@@ -620,6 +644,24 @@ interface ThisType<T> {}
 - 첫 번째 줄부터 보기 보다는 마지막 줄 exports default나 export = 부분을 보고 거슬러 올라가는 게 좋음
 - 제네릭이 제일 읽기 어려워서 제네릭 부분은 따로 필기하면서 보는게 좋음
 
+## 모듈 시스템
+
+```typescript
+export = A; // commonjs
+import A = require("a"); // commonjs
+
+export = A;
+export as namespace A; // UMD
+
+export default A; // ESM
+import A from "a"; // ESM
+```
+
+```typescript
+declare global {}
+export {}; // export나 import 필요
+```
+
 ## jQuery의 타이핑
 
 ```typescript
@@ -669,194 +711,6 @@ interface JQuery<TElement = HTMLElement> extends Iterable<TElement> {
       | false
   ): this;
 }
-```
-
-## redux의 타이핑
-
-```typescript
-
-```
-
-```typescript
-export interface Dispatch<A extends Action = AnyAction> {
-  <T extends A>(action: T, ...extraArgs: any[]): T;
-}
-
-export interface Action<T = any> {
-  type: T;
-}
-
-export interface AnyAction extends Action {
-  // Allows any extra properties to be defined in an action.
-  [extraProps: string]: any;
-}
-
-export interface ActionCreator<A, P extends any[] = any[]> {
-  (...args: P): A;
-}
-
-export type Reducer<S = any, A extends Action = AnyAction> = (
-  state: S | undefined,
-  action: A
-) => S;
-
-export interface MiddlewareAPI<D extends Dispatch = Dispatch, S = any> {
-  dispatch: D;
-  getState(): S;
-}
-
-export interface Middleware<
-  _DispatchExt = {}, // TODO: remove unused component (breaking change)
-  S = any,
-  D extends Dispatch = Dispatch
-> {
-  (api: MiddlewareAPI<D, S>): (
-    next: D
-  ) => (action: D extends Dispatch<infer A> ? A : never) => any;
-}
-```
-
-## react-redux의 타이핑
-
-```typescript
-export const useSelector = /*#__PURE__*/ createSelectorHook();
-
-export function createSelectorHook(
-  context = ReactReduxContext
-): <TState = unknown, Selected = unknown>(
-  selector: (state: TState) => Selected,
-  equalityFn?: EqualityFn<Selected>
-) => Selected {}
-
-export const useDispatch = /*#__PURE__*/ createDispatchHook();
-
-export function createDispatchHook<
-  S = unknown,
-  A extends Action = AnyAction
-  // @ts-ignore
->(context?: Context<ReactReduxContextValue<S, A>> = ReactReduxContext) {
-  const useStore =
-    // @ts-ignore
-    context === ReactReduxContext ? useDefaultStore : createStoreHook(context);
-
-  return function useDispatch<
-    AppDispatch extends Dispatch<A> = Dispatch<A>
-  >(): AppDispatch {
-    const store = useStore();
-    // @ts-ignore
-    return store.dispatch;
-  };
-}
-```
-
-## react의 타이핑
-
-export = React; declare namespace React, declare global, namespace JSX
-
-```typescript
-import React = require("react");
-import * as React from "react";
-React.useEffect;
-```
-
-return에 무엇이 들어갈 수 있을까? JSX, string, null?
-
-```typescript
-function App(): JSX.Element {
-  ...
-}
-
-const App: FC<{}> = () => <div />;
-
-interface Element extends React.ReactElement<any, any> { }
-
-interface ReactElement<P = any, T extends string | JSXElementConstructor<any> = string | JSXElementConstructor<any>> {
-    type: T;
-    props: P;
-    key: Key | null;
-}
-
-type JSXElementConstructor<P> =
-        | ((props: P) => ReactElement<any, any> | null)
-        | (new (props: P) => Component<any, any>);
-
-class Component<P, S> {
-  render(): ReactNode;
-}
-
-interface FunctionComponent<P = {}> {
-//    (props: PropsWithChildren<P>, context?: any): ReactElement<any, any> | null; // React17
-    (props: P, context?: any): ReactElement<any, any> | null;
-    propTypes?: WeakValidationMap<P> | undefined;
-    contextTypes?: ValidationMap<any> | undefined;
-    defaultProps?: Partial<P> | undefined;
-    displayName?: string | undefined;
-}
-
-type ReactText = string | number;
-type ReactChild = ReactElement | ReactText;
-type ReactFragment = {} | Iterable<ReactNode>;
-type ReactNode = ReactChild | ReactFragment | ReactPortal | boolean | null | undefined;
-interface ReactPortal extends ReactElement {
-    key: Key | null;
-    children: ReactNode;
-}
-
-type FC<P = {}> = FunctionComponent<P>;
-
-interface FunctionComponent<P = {}> {
-    (props: PropsWithChildren<P>, context?: any): ReactElement<any, any> | null;
-    propTypes?: WeakValidationMap<P> | undefined;
-    contextTypes?: ValidationMap<any> | undefined;
-    defaultProps?: Partial<P> | undefined;
-    displayName?: string | undefined;
-}
-
-type VFC<P = {}> = VoidFunctionComponent<P>;
-
-interface VoidFunctionComponent<P = {}> {
-    (props: P, context?: any): ReactElement<any, any> | null;
-    propTypes?: WeakValidationMap<P> | undefined;
-    contextTypes?: ValidationMap<any> | undefined;
-    defaultProps?: Partial<P> | undefined;
-    displayName?: string | undefined;
-}
-```
-
-훅 타이핑
-
-```typescript
-function useState<S>(
-  initialState: S | (() => S)
-): [S, Dispatch<SetStateAction<S>>];
-function useState<S = undefined>(): [
-  S | undefined,
-  Dispatch<SetStateAction<S | undefined>>
-];
-
-type SetStateAction<S> = S | ((prevState: S) => S);
-type Dispatch<A> = (value: A) => void;
-
-function useRef<T>(initialValue: T): MutableRefObject<T>;
-function useRef<T>(initialValue: T | null): RefObject<T>;
-function useRef<T = undefined>(): MutableRefObject<T | undefined>;
-
-interface MutableRefObject<T> {
-  current: T;
-}
-interface RefObject<T> {
-  readonly current: T | null;
-}
-
-function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void;
-function useEffect(effect: EffectCallback, deps?: DependencyList): void;
-
-type EffectCallback = () => void | Destructor;
-type DependencyList = ReadonlyArray<unknown>;
-type Destructor = () => void | { [UNDEFINED_VOID_ONLY]: never };
-
-function useCallback<T extends Function>(callback: T, deps: DependencyList): T;
-function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T;
 ```
 
 ## axios의 타이핑
@@ -970,6 +824,252 @@ export interface AxiosResponse<T = any, D = any> {
   request?: any;
 }
 ```
+
+## react의 타이핑
+
+[소스 링크](https://github.com/ZeroCho/ts-react/tree/master/2.%EB%81%9D%EB%A7%90%EC%9E%87%EA%B8%B0)
+
+export = React; declare namespace React, declare global, namespace JSX
+
+```typescript
+import React = require("react");
+import * as React from "react";
+React.useEffect;
+```
+
+return에 무엇이 들어갈 수 있을까? JSX, string, null?
+
+```typescript
+function App(): JSX.Element {
+  ...
+}
+
+const App: FC<{}> = () => <div />;
+
+interface Element extends React.ReactElement<any, any> { }
+
+interface ReactElement<P = any, T extends string | JSXElementConstructor<any> = string | JSXElementConstructor<any>> {
+    type: T;
+    props: P;
+    key: Key | null;
+}
+
+type JSXElementConstructor<P> =
+        | ((props: P) => ReactElement<any, any> | null)
+        | (new (props: P) => Component<any, any>);
+
+class Component<P, S> {
+  render(): ReactNode;
+}
+
+interface FunctionComponent<P = {}> {
+//    (props: PropsWithChildren<P>, context?: any): ReactElement<any, any> | null; // React17
+    (props: P, context?: any): ReactElement<any, any> | null;
+    propTypes?: WeakValidationMap<P> | undefined;
+    contextTypes?: ValidationMap<any> | undefined;
+    defaultProps?: Partial<P> | undefined;
+    displayName?: string | undefined;
+}
+
+type ReactText = string | number;
+type ReactChild = ReactElement | ReactText;
+type ReactFragment = {} | Iterable<ReactNode>;
+type ReactNode = ReactChild | ReactFragment | ReactPortal | boolean | null | undefined;
+interface ReactPortal extends ReactElement {
+    key: Key | null;
+    children: ReactNode;
+}
+
+type FC<P = {}> = FunctionComponent<P>;
+
+interface FunctionComponent<P = {}> {
+    (props: PropsWithChildren<P>, context?: any): ReactElement<any, any> | null;
+    propTypes?: WeakValidationMap<P> | undefined;
+    contextTypes?: ValidationMap<any> | undefined;
+    defaultProps?: Partial<P> | undefined;
+    displayName?: string | undefined;
+}
+
+type VFC<P = {}> = VoidFunctionComponent<P>;
+
+interface VoidFunctionComponent<P = {}> {
+    (props: P, context?: any): ReactElement<any, any> | null;
+    propTypes?: WeakValidationMap<P> | undefined;
+    contextTypes?: ValidationMap<any> | undefined;
+    defaultProps?: Partial<P> | undefined;
+    displayName?: string | undefined;
+}
+```
+
+훅 타이핑
+
+```typescript
+function useState<S>(
+  initialState: S | (() => S)
+): [S, Dispatch<SetStateAction<S>>];
+function useState<S = undefined>(): [
+  S | undefined,
+  Dispatch<SetStateAction<S | undefined>>
+];
+
+type SetStateAction<S> = S | ((prevState: S) => S);
+type Dispatch<A> = (value: A) => void;
+
+function useRef<T>(initialValue: T): MutableRefObject<T>;
+function useRef<T>(initialValue: T | null): RefObject<T>;
+function useRef<T = undefined>(): MutableRefObject<T | undefined>;
+
+interface MutableRefObject<T> {
+  current: T;
+}
+interface RefObject<T> {
+  readonly current: T | null;
+}
+
+function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void;
+function useEffect(effect: EffectCallback, deps?: DependencyList): void;
+
+type EffectCallback = () => void | Destructor;
+type DependencyList = ReadonlyArray<unknown>;
+type Destructor = () => void | { [UNDEFINED_VOID_ONLY]: never };
+
+function useCallback<T extends Function>(callback: T, deps: DependencyList): T;
+function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T;
+```
+
+tsconfig.json "jsx": "react"로
+
+```typescript
+import * as React from "react";
+import { useState, useCallback, useRef } from "react";
+
+const WordRelay = () => {
+  const [word, setWord] = useState("제로초");
+  const [value, setValue] = useState("");
+  const [result, setResult] = useState("");
+  const inputEl = useRef(null);
+
+  const onSubmitForm = useCallback(
+    (e) => {
+      e.preventDefault();
+      const input = inputEl.current;
+      if (word[word.length - 1] === value[0]) {
+        setResult("딩동댕");
+        setWord(value);
+        setValue("");
+        if (input) {
+          input.focus();
+        }
+      } else {
+        setResult("땡");
+        setValue("");
+        if (input) {
+          input.focus();
+        }
+      }
+    },
+    [word, value]
+  );
+
+  const onChange = useCallback((e) => {
+    setValue(e.currentTarget.value);
+  }, []);
+
+  return (
+    <>
+      <div>{word}</div>
+      <form onSubmit={onSubmitForm}>
+        <input ref={inputEl} value={value} onChange={onChange} />
+        <button>입력!</button>
+      </form>
+      <div>{result}</div>
+    </>
+  );
+};
+
+export default WordRelay;
+```
+
+## redux의 타이핑
+
+```typescript
+
+```
+
+```typescript
+export interface Dispatch<A extends Action = AnyAction> {
+  <T extends A>(action: T, ...extraArgs: any[]): T;
+}
+
+export interface Action<T = any> {
+  type: T;
+}
+
+export interface AnyAction extends Action {
+  // Allows any extra properties to be defined in an action.
+  [extraProps: string]: any;
+}
+
+export interface ActionCreator<A, P extends any[] = any[]> {
+  (...args: P): A;
+}
+
+export type Reducer<S = any, A extends Action = AnyAction> = (
+  state: S | undefined,
+  action: A
+) => S;
+
+export interface MiddlewareAPI<D extends Dispatch = Dispatch, S = any> {
+  dispatch: D;
+  getState(): S;
+}
+
+export interface Middleware<
+  _DispatchExt = {}, // TODO: remove unused component (breaking change)
+  S = any,
+  D extends Dispatch = Dispatch
+> {
+  (api: MiddlewareAPI<D, S>): (
+    next: D
+  ) => (action: D extends Dispatch<infer A> ? A : never) => any;
+}
+```
+
+## react-redux의 타이핑
+
+```typescript
+export const useSelector = /*#__PURE__*/ createSelectorHook();
+
+export function createSelectorHook(
+  context = ReactReduxContext
+): <TState = unknown, Selected = unknown>(
+  selector: (state: TState) => Selected,
+  equalityFn?: EqualityFn<Selected>
+) => Selected {}
+
+export const useDispatch = /*#__PURE__*/ createDispatchHook();
+
+export function createDispatchHook<
+  S = unknown,
+  A extends Action = AnyAction
+  // @ts-ignore
+>(context?: Context<ReactReduxContextValue<S, A>> = ReactReduxContext) {
+  const useStore =
+    // @ts-ignore
+    context === ReactReduxContext ? useDefaultStore : createStoreHook(context);
+
+  return function useDispatch<
+    AppDispatch extends Dispatch<A> = Dispatch<A>
+  >(): AppDispatch {
+    const store = useStore();
+    // @ts-ignore
+    return store.dispatch;
+  };
+}
+```
+
+[Provider 소스 링크](https://github.com/ZeroCho/ts-react/blob/master/react-redux-immer/client.tsx)
+[훅 소스 링크](https://github.com/ZeroCho/ts-react/blob/master/react-redux-immer/App.tsx)
 
 ## Node의 타이핑
 
@@ -1205,5 +1305,24 @@ declare class Strategy extends PassportStrategy {
   constructor(verify: VerifyFunction);
 
   name: string;
+}
+```
+
+### d.ts 사용하기
+
+- 그냥 일반 ts 파일에 타입 선언해도 됨
+- BUT, import한 것과 인터페이스 이름이 겹치면 에러 발생
+- 이럴 경우 d.ts로 분리(d.ts는 타입만 있고 구현은 없는 파일)
+- 우선 declare global, declare module, declare namespace 없이 타이핑하기
+- 확장하고 싶은 인터페이스가 저렇게 되어있다면 declare 추가
+- 한 번 declare 쓴 블럭 안에서는 추가적으로 declare 필요 없음
+
+## 직접 타이핑하기
+
+types/모듈명.d.ts (꼭 types 폴더 안에 있을 필요는 없음)
+
+```typescript
+declare module "모듈명" {
+  // import나 export 하나 필수
 }
 ```
