@@ -1,6 +1,7 @@
 // <div id="header"></div>;
 // ** 느낌표 쓰지말기 만약 head의 이름이 변경될 수 있기 때문에 보장이 안댐
-//const head = document.querySelector("$head")!;
+// 최대한 ! 대신 if를 쓸 것
+// const head = document.querySelector("$head")!;
 
 const head = document.querySelector("$head");
 if (head) {
@@ -88,6 +89,7 @@ const interfaceB: B = { a: "hello" };
 // add("1", "2");
 // add(1, "2");
 
+// ** 객체 리터럴은 잉여 속성 검사가 있음.
 // AND 모든 속성이 다 있어야 함 (인터섹션)
 type TypeCheck = { hello: "world" } & { zero: "cho" };
 const typeCheck: TypeCheck = { hello: "world", zero: "cho" };
